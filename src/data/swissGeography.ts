@@ -29,6 +29,7 @@ export const SWISS_CANTON_CITIES: Record<SwissCanton, string[]> = {
     'Yverdon-les-Bains',
     'Lutry',
     'Rolle',
+    'Gland',
   ],
   'Basel-Stadt': ['Basel', 'Riehen', 'Bettingen'],
   Bern: ['Bern', 'Thun', 'Biel/Bienne', 'Köniz', 'Burgdorf'],
@@ -80,6 +81,7 @@ export const SWISS_CITY_GEO: Record<string, CityGeoInfo> = {
   'Yverdon-les-Bains': { lat: 46.7785, lng: 6.6411, xPercent: 27, yPercent: 49, canton: 'Vaud', hub: 'Lausanne Gare', min: 22, postal: '1400' },
   Lutry: { lat: 46.5034, lng: 6.6868, xPercent: 28, yPercent: 65, canton: 'Vaud', hub: 'Lausanne Gare', min: 7, postal: '1095' },
   Rolle: { lat: 46.4578, lng: 6.3389, xPercent: 20, yPercent: 70, canton: 'Vaud', hub: 'Lausanne Gare', min: 20, postal: '1180' },
+  Gland: { lat: 46.4214, lng: 6.2694, xPercent: 18, yPercent: 72, canton: 'Vaud', hub: 'Genève Cornavin', min: 22, postal: '1196' },
 
   // Basel-Stadt
   Basel: { lat: 47.5596, lng: 7.5886, xPercent: 44, yPercent: 16, canton: 'Basel-Stadt', hub: 'Basel SBB', min: 5, postal: '4051' },

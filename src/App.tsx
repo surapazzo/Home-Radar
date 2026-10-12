@@ -3,19 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
-import { Listing, FilterState, DossierState, AgentLog, Language } from './types';
+import { Listing, FilterState, DossierState, AgentLog, Language, UserProfile } from './types';
 import { TRANSLATIONS } from './i18n/translations';
 import { Navbar } from './components/Navbar';
 import { FilterToolbar } from './components/FilterToolbar';
 import { ListingCard } from './components/ListingCard';
 import { SwissMap } from './components/SwissMap';
-import { FacebookIngestionModal } from './components/FacebookIngestionModal';
 import { DossierView } from './components/DossierView';
 import { AgentWorkbench } from './components/AgentWorkbench';
 import { ListingDetailModal } from './components/ListingDetailModal';
-import { Building, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { AccountModal } from './components/AccountModal';
+import { generateSwissDossierPdf } from './utils/generateSwissDossierPdf';
+import { Building, LayoutGrid, Map as MapIcon, CheckCircle2 } from 'lucide-react';
 
 const DEFAULT_FILTERS: FilterState = {
   searchQuery: '',
@@ -51,6 +52,13 @@ const DEFAULT_DOSSIER: DossierState = {
   familyMembersCount: 1,
   petsInfo: 'Aucun animal',
   customLetterNotes: 'Non-fumeur, solvabilité garantie et références bancaires à disposition.',
+  dateOfBirth: '1992-08-14',
+  maritalStatus: 'Celibe / Nubile',
+  currentAddress: 'Avenue de la Gare 14, 1003 Lausanne',
+  employmentType: 'CDI (Tempo Indeterminato 100%)',
+  targetRentCHF: 2200,
+  employmentDuration: '> 2 anni',
+  probationPassed: true,
 };
 
 export default function App() {
@@ -64,8 +72,36 @@ export default function App() {
   const [activeView, setActiveView] = useState<'feed' | 'dossier' | 'agents'>('feed');
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [dossier, setDossier] = useState<DossierState>(DEFAULT_DOSSIER);
-  const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false);
   const [mobilePane, setMobilePane] = useState<'list' | 'map'>('list');
+
+  // User Account State with localStorage persistence
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('home_radar_current_user');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to parse saved user profile', e);
+    }
+    return null;
+  });
+
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
+  const [accountToast, setAccountToast] = useState<string | null>(null);
+
+  // Sync user profile to localStorage
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('home_radar_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('home_radar_current_user');
+      }
+    } catch (e) {
+      console.error('Failed to save user profile', e);
+    }
+  }, [currentUser]);
 
   // Dark Mode state with localStorage and system preference detection
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -147,6 +183,53 @@ export default function App() {
     setSelectedListing(crawledListing);
   };
 
+  const handleLogin = (user: UserProfile) => {
+    setCurrentUser(user);
+    if (user.savedListingIds && user.savedListingIds.length > 0) {
+      setSavedListingIds((prev) => {
+        const next = new Set(prev);
+        user.savedListingIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+    const providerLabel = user.provider === 'google' ? 'Google' : user.provider === 'apple' ? 'Apple' : 'Email';
+    setAccountToast(`${t.account.loginSuccess} (${providerLabel})`);
+    setTimeout(() => setAccountToast(null), 3500);
+
+    setAgentLogs((prev) => [
+      {
+        id: `log-auth-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString('fr-CH'),
+        agentName: 'Dossier Matcher',
+        type: 'success',
+        message: `Sessione utente autenticata con successo tramite ${providerLabel}: "${user.name}" (${user.email}).`,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setAccountToast(t.account.logoutSuccess);
+    setTimeout(() => setAccountToast(null), 3000);
+  };
+
+  const handleUpdateUser = (updated: UserProfile) => {
+    setCurrentUser(updated);
+  };
+
+  const handleSyncWithDossier = (user: UserProfile) => {
+    setDossier((prev) => ({
+      ...prev,
+      applicantName: user.name,
+      email: user.email,
+      phone: user.phone || prev.phone,
+      targetCanton: user.preferredCanton || prev.targetCanton,
+    }));
+    setAccountToast(t.account.syncSuccess);
+    setTimeout(() => setAccountToast(null), 3000);
+  };
+
   // Filtered and Sorted Listings across Switzerland
   const filteredListings = useMemo(() => {
     return listings.filter((item) => {
@@ -223,10 +306,12 @@ export default function App() {
         setLang={setLang}
         activeView={activeView}
         setActiveView={setActiveView}
-        onOpenFacebookModal={() => setIsFacebookModalOpen(true)}
+        onDownloadPdf={() => generateSwissDossierPdf(dossier, lang)}
         listingsCount={listings.length}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
+        currentUser={currentUser}
+        onOpenAccountModal={() => setIsAccountModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -357,17 +442,14 @@ export default function App() {
             onInjectListing={handleInjectListingFromAgent}
             dossier={dossier}
             listingsCount={listings.length}
+            onApplyFilters={(newFilters) => {
+              setFilters((p) => ({ ...p, ...newFilters }));
+              setActiveView('feed');
+            }}
+            onSelectView={setActiveView}
           />
         )}
       </main>
-
-      {/* Facebook AI Ingestion Modal */}
-      <FacebookIngestionModal
-        lang={lang}
-        isOpen={isFacebookModalOpen}
-        onClose={() => setIsFacebookModalOpen(false)}
-        onAddListing={handleAddListing}
-      />
 
       {/* Listing Detail Modal */}
       <ListingDetailModal
@@ -382,6 +464,32 @@ export default function App() {
         isSaved={detailModalListing ? savedListingIds.has(detailModalListing.id) : false}
         onToggleSave={handleToggleSave}
       />
+
+      {/* Account Modal (Sign in with Google & Apple, Profile, Sync) */}
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        currentUser={currentUser}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        onUpdateUser={handleUpdateUser}
+        onSyncWithDossier={handleSyncWithDossier}
+        lang={lang}
+        savedListings={listings.filter((l) => savedListingIds.has(l.id))}
+        onSelectListing={(listing) => {
+          setSelectedListing(listing);
+          setDetailModalListing(listing);
+        }}
+        onRemoveSaved={handleToggleSave}
+      />
+
+      {/* Account Notification Toast */}
+      {accountToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl shadow-xl text-xs font-semibold animate-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0" />
+          <span>{accountToast}</span>
+        </div>
+      )}
     </div>
   );
 }

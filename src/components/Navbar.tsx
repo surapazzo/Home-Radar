@@ -1,17 +1,19 @@
 import React from 'react';
-import { Language } from '../types';
+import { Language, UserProfile } from '../types';
 import { TRANSLATIONS } from '../i18n/translations';
-import { Plus, FileText, Bot, Radio, Moon, Sun } from 'lucide-react';
+import { Download, FileText, Bot, Radio, Moon, Sun, User } from 'lucide-react';
 
 interface NavbarProps {
   lang: Language;
   setLang: (lang: Language) => void;
   activeView: 'feed' | 'dossier' | 'agents';
   setActiveView: (view: 'feed' | 'dossier' | 'agents') => void;
-  onOpenFacebookModal: () => void;
+  onDownloadPdf?: () => void;
   listingsCount: number;
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
+  currentUser?: UserProfile | null;
+  onOpenAccountModal?: () => void;
 }
 
 const LANGUAGES: { code: Language; label: string; full: string }[] = [
@@ -26,10 +28,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   setLang,
   activeView,
   setActiveView,
-  onOpenFacebookModal,
+  onDownloadPdf,
   listingsCount,
   darkMode,
   setDarkMode,
+  currentUser,
+  onOpenAccountModal,
 }) => {
   const t = TRANSLATIONS[lang];
 
@@ -142,14 +146,53 @@ export const Navbar: React.FC<NavbarProps> = ({
               ))}
             </div>
 
-            {/* Primary Action: Import Facebook Post */}
+            {/* Account / Sign In with Google & Apple CTA */}
+            {onOpenAccountModal && (
+              <button
+                onClick={onOpenAccountModal}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 cursor-pointer ${
+                  currentUser
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-750'
+                }`}
+                title={currentUser ? currentUser.name : t.account.title}
+                aria-label={currentUser ? currentUser.name : t.account.title}
+              >
+                {currentUser ? (
+                  <>
+                    {currentUser.avatarUrl ? (
+                      <img
+                        src={currentUser.avatarUrl}
+                        alt={currentUser.name}
+                        className="w-4 h-4 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-red-600 text-white font-bold text-[9px] flex items-center justify-center shrink-0">
+                        {currentUser.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="hidden md:inline max-w-[75px] truncate">
+                      {currentUser.name.split(' ')[0]}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <User className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                    <span className="hidden sm:inline">{t.nav.account || 'Account'}</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Primary Action: Download Official Dossier PDF */}
             <button
-              onClick={onOpenFacebookModal}
+              onClick={onDownloadPdf ? onDownloadPdf : () => setActiveView('dossier')}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap shrink-0 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              aria-label="Importa post da gruppi Facebook"
+              aria-label={t.dossier.downloadPdf}
+              title={t.dossier.downloadPdf}
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.nav.importFb}</span>
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Dossier PDF</span>
             </button>
           </div>
         </div>

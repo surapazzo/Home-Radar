@@ -93,13 +93,46 @@ export interface DossierState {
   familyMembersCount: number;
   petsInfo: string;
   customLetterNotes: string;
+  dateOfBirth?: string;
+  maritalStatus?: string;
+  currentAddress?: string;
+  employmentType?: string;
+  targetRentCHF?: number;
+  employmentDuration?: string;
+  probationPassed?: boolean;
 }
 
 export interface AgentLog {
   id: string;
   timestamp: string;
-  agentName: 'Portal Crawler' | 'Facebook Scout' | 'Dossier Matcher';
+  agentName: 'Portal Crawler' | 'Facebook Scout' | 'Dossier Matcher' | 'UX Agent Gland' | 'UX Agent Zürich' | string;
   type: 'info' | 'success' | 'alert' | 'scrape';
   message: string;
   listingId?: string;
+  uxMetrics?: {
+    searchedLocation: string;
+    matchedCount: number;
+    commuteHub: string;
+    commuteMin: number;
+    solvencyRatioPercent: number;
+    status: 'optimal' | 'warning' | 'error';
+  };
+}
+
+export type AuthProvider = 'google' | 'apple' | 'email';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  provider: AuthProvider;
+  providerAccountId: string;
+  createdAt: string;
+  phone?: string;
+  verifiedEmail: boolean;
+  preferredCanton?: SwissCanton | string;
+  syncDossierWithCloud: boolean;
+  savedListingIds: string[];
+  hideEmailWithApple?: boolean;
 }
