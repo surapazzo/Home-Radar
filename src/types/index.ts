@@ -75,6 +75,14 @@ export interface FilterState {
   sortBy: 'newest' | 'price_asc' | 'price_desc' | 'rooms_desc' | 'commute_asc';
 }
 
+export interface SearchHistoryItem {
+  id: string;
+  timestamp: string;
+  filters: FilterState;
+  label: string;
+  resultCount?: number;
+}
+
 export interface DossierState {
   applicantName: string;
   email: string;

@@ -5,10 +5,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
-import { Listing, FilterState, DossierState, AgentLog, Language, UserProfile } from './types';
+import { Listing, FilterState, DossierState, AgentLog, Language, UserProfile, SearchHistoryItem } from './types';
 import { TRANSLATIONS } from './i18n/translations';
 import { Navbar } from './components/Navbar';
 import { FilterToolbar } from './components/FilterToolbar';
+import { SearchHistory } from './components/SearchHistory';
 import { ListingCard } from './components/ListingCard';
 import { SwissMap } from './components/SwissMap';
 import { DossierView } from './components/DossierView';
@@ -60,6 +61,41 @@ const DEFAULT_DOSSIER: DossierState = {
   employmentDuration: '> 2 anni',
   probationPassed: true,
 };
+
+function areFiltersEqual(a: FilterState, b: FilterState): boolean {
+  return (
+    a.selectedCanton === b.selectedCanton &&
+    a.selectedCity === b.selectedCity &&
+    a.searchQuery.trim().toLowerCase() === b.searchQuery.trim().toLowerCase() &&
+    a.maxRentTotalCHF === b.maxRentTotalCHF &&
+    a.minRooms === b.minRooms &&
+    a.maxRooms === b.maxRooms &&
+    a.repriseOnly === b.repriseOnly &&
+    a.petsAllowed === b.petsAllowed &&
+    a.balconyOnly === b.balconyOnly &&
+    a.parkingOnly === b.parkingOnly &&
+    a.maxCommuteMin === b.maxCommuteMin &&
+    a.sourceFilter === b.sourceFilter &&
+    a.sortBy === b.sortBy
+  );
+}
+
+function isDefaultFilter(f: FilterState): boolean {
+  return (
+    !f.selectedCanton &&
+    !f.selectedCity &&
+    !f.searchQuery.trim() &&
+    f.maxRentTotalCHF === DEFAULT_FILTERS.maxRentTotalCHF &&
+    f.minRooms === DEFAULT_FILTERS.minRooms &&
+    f.maxRooms === DEFAULT_FILTERS.maxRooms &&
+    !f.repriseOnly &&
+    !f.petsAllowed &&
+    !f.balconyOnly &&
+    !f.parkingOnly &&
+    f.maxCommuteMin === DEFAULT_FILTERS.maxCommuteMin &&
+    f.sourceFilter === DEFAULT_FILTERS.sourceFilter
+  );
+}
 
 export default function App() {
   const [lang, setLang] = useState<Language>('it');

@@ -232,6 +232,17 @@ export const TRANSLATIONS = {
       cloudBackupActive: 'Backup Cloud Dossier Attivo',
       lastSync: 'Ultima sincronizzazione',
     },
+    searchHistory: {
+      title: 'Ricerche Recenti',
+      subtitle: 'Ultime 5 combinazioni salvate per accesso rapido',
+      clearAll: 'Cancella',
+      noHistory: 'Nessuna ricerca recente salvata. Modifica i filtri per salvare automaticamente le tue ricerche.',
+      applied: 'Filtri applicati',
+      allSwitzerland: 'Tutta la Svizzera',
+      activeSearch: 'Attiva',
+      restoreTooltip: 'Ripristina questa combinazione di filtri',
+      removeItem: 'Rimuovi ricerca',
+    },
   },
 
   fr: {
@@ -464,6 +475,17 @@ export const TRANSLATIONS = {
       emailLabel: 'Adresse E-mail',
       cloudBackupActive: 'Sauvegarde Cloud du Dossier Active',
       lastSync: 'Dernière synchronisation',
+    },
+    searchHistory: {
+      title: 'Recherches Récentes',
+      subtitle: '5 dernières combinaisons enregistrées pour accès rapide',
+      clearAll: 'Effacer',
+      noHistory: 'Aucune recherche récente enregistrée. Modifiez les filtres pour les mémoriser automatiquement.',
+      applied: 'Filtres appliqués',
+      allSwitzerland: 'Toute la Suisse',
+      activeSearch: 'Active',
+      restoreTooltip: 'Restaurer cette combinaison de filtres',
+      removeItem: 'Supprimer la recherche',
     },
   },
 
@@ -698,6 +720,17 @@ export const TRANSLATIONS = {
       cloudBackupActive: 'Cloud-Backup für Dossier aktiv',
       lastSync: 'Letzte Synchronisation',
     },
+    searchHistory: {
+      title: 'Letzte Suchen',
+      subtitle: 'Die letzten 5 gespeicherten Suchkombinationen für Schnellzugriff',
+      clearAll: 'Löschen',
+      noHistory: 'Keine letzten Suchen gespeichert. Ändern Sie die Filter, um sie automatisch zu sichern.',
+      applied: 'Filter angewendet',
+      allSwitzerland: 'Ganze Schweiz',
+      activeSearch: 'Aktiv',
+      restoreTooltip: 'Diese Suchkombination wiederherstellen',
+      removeItem: 'Suche entfernen',
+    },
   },
 
   en: {
@@ -930,6 +963,17 @@ export const TRANSLATIONS = {
       emailLabel: 'Email Address',
       cloudBackupActive: 'Cloud Backup for Dossier Active',
       lastSync: 'Last synced',
+    },
+    searchHistory: {
+      title: 'Recent Searches',
+      subtitle: 'Last 5 saved filter combinations for quick access',
+      clearAll: 'Clear',
+      noHistory: 'No recent searches saved. Modify filters to save them automatically.',
+      applied: 'Filters applied',
+      allSwitzerland: 'All Switzerland',
+      activeSearch: 'Active',
+      restoreTooltip: 'Restore this search filter combination',
+      removeItem: 'Remove search',
     },
   },
 } as const;
