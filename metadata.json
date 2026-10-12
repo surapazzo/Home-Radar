@@ -1,0 +1,6 @@
+{
+  "name": "Home Radar - Radar Immobiliare Svizzero & Gruppi Facebook CH",
+  "description": "Piattaforma aggregatore di annunci immobiliari e gruppi Facebook per tutta la Svizzera (Zürich, Genève, Vaud, Basel, Bern, Ticino, Luzern, Zug, Neuchâtel, St. Gallen), con bandiere cantonali, mappa SBB/CFF, commute tracker, dossier di candidatura e modalità scura accessibile.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
