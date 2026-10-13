@@ -126,6 +126,52 @@ export default function App() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [accountToast, setAccountToast] = useState<string | null>(null);
 
+  // Search History State (Last 5 filter combinations for quick access)
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('home_radar_search_history');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to parse search history', e);
+    }
+    return [
+      {
+        id: 'hist-1',
+        timestamp: '14:20',
+        label: 'Gland (VD) · La Côte CFF',
+        resultCount: 2,
+        filters: {
+          ...DEFAULT_FILTERS,
+          selectedCanton: 'Vaud',
+          selectedCity: 'Gland',
+          maxRentTotalCHF: 2400,
+        },
+      },
+      {
+        id: 'hist-2',
+        timestamp: '11:05',
+        label: 'Zürich · SBB < 15 min',
+        resultCount: 5,
+        filters: {
+          ...DEFAULT_FILTERS,
+          selectedCanton: 'Zürich',
+          selectedCity: '',
+          maxCommuteMin: 15,
+          maxRentTotalCHF: 3200,
+        },
+      },
+    ];
+  });
+
+  // Sync search history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('home_radar_search_history', JSON.stringify(searchHistory));
+    } catch {}
+  }, [searchHistory]);
+
   // Sync user profile to localStorage
   useEffect(() => {
     try {
@@ -330,6 +376,44 @@ export default function App() {
     });
   }, [listings, filters]);
 
+  // Record non-default filter combinations to searchHistory (capped at 5)
+  useEffect(() => {
+    if (isDefaultFilter(filters)) return;
+
+    const timer = setTimeout(() => {
+      setSearchHistory((prev) => {
+        if (prev.length > 0 && areFiltersEqual(prev[0].filters, filters)) {
+          return prev;
+        }
+
+        const filtered = prev.filter((item) => !areFiltersEqual(item.filters, filters));
+
+        let label = 'Tutta la Svizzera';
+        if (filters.selectedCity) {
+          label = `${filters.selectedCity} (${filters.selectedCanton || 'CH'})`;
+        } else if (filters.selectedCanton) {
+          label = `Canton ${filters.selectedCanton}`;
+        } else if (filters.searchQuery) {
+          label = `"${filters.searchQuery}"`;
+        } else if (filters.repriseOnly) {
+          label = 'Subentri / Nachmieter';
+        }
+
+        const newItem: SearchHistoryItem = {
+          id: `hist-${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' }),
+          label,
+          filters,
+          resultCount: filteredListings.length,
+        };
+
+        return [newItem, ...filtered].slice(0, 5);
+      });
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [filters, filteredListings.length]);
+
   const handleResetFilters = () => {
     setFilters(DEFAULT_FILTERS);
   };
@@ -398,6 +482,17 @@ export default function App() {
                   mobilePane === 'map' ? 'hidden lg:block' : 'block'
                 }`}
               >
+                {/* Search History (Last 5 filter combinations for quick access) */}
+                <SearchHistory
+                  lang={lang}
+                  history={searchHistory}
+                  activeFilters={filters}
+                  onSelectHistory={(item) => setFilters(item.filters)}
+                  onRemoveItem={(id) => setSearchHistory((p) => p.filter((x) => x.id !== id))}
+                  onClearAll={() => setSearchHistory([])}
+                  onQuickPreset={(presetFilters) => setFilters((p) => ({ ...p, ...presetFilters }))}
+                />
+
                 {filteredListings.length === 0 ? (
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center space-y-3 transition-colors">
                     <Building className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />

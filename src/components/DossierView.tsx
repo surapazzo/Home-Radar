@@ -23,6 +23,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { generateSwissDossierPdf } from '../utils/generateSwissDossierPdf';
+import { DocumentScannerCard } from './DocumentScannerCard';
 
 interface DossierViewProps {
   lang: Language;
@@ -624,6 +625,13 @@ Email : ${dossier.email}`;
           </div>
         </div>
       </div>
+
+      {/* Smart Mobile Camera & QR Code Document Scanner */}
+      <DocumentScannerCard
+        lang={lang}
+        dossier={dossier}
+        onUpdateDossier={setDossier}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Solvency & Checklist */}

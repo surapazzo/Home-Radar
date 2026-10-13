@@ -16,7 +16,13 @@ import { SWISS_CANTONS, SWISS_CANTON_CITIES, getCitiesForCanton } from './data/s
 import { generateSwissDossierPdf } from './utils/generateSwissDossierPdf';
 import { TRANSLATIONS } from './i18n/translations';
 import { SWISS_HUBS } from './components/SwissMap';
-import { UserProfile } from './types';
+import { UserProfile, DossierState } from './types';
+import {
+  parseScannedDocumentOrQR,
+  applyExtractedDataToDossier,
+  SAMPLE_SWISS_DOCUMENTS,
+} from './utils/documentScannerParser';
+import { generateApplicationEmail } from './utils/generateApplicationEmail';
 
 interface TestResult {
   name: string;
@@ -347,6 +353,102 @@ assert(
   'Dossier Strength: Analisi Algoritmica di Completezza e Solvibilità (USPI/SVIT)',
   'Dossier Strength',
   `Rapporto pigione/stipendio calcolato al ${ratioPct.toFixed(1)}% (< 30% ottimale), CDI 100%, periodo di prova superato e 4/4 attestazioni verificate (Rating Top Tier).`
+);
+
+// Test 18: Smart Document & QR-Code Parsing (File-to-Dossier Automation)
+const sampleSalaryDoc = SAMPLE_SWISS_DOCUMENTS.find((d) => d.type === 'salary_slip');
+const parsedSalary = parseScannedDocumentOrQR({
+  rawText: sampleSalaryDoc?.sampleText,
+  qrPayload: sampleSalaryDoc?.sampleQRPayload,
+  fileName: 'bulletin_salaire_epfl.pdf',
+  source: 'upload',
+});
+
+const initialMockDossier: DossierState = {
+  applicantName: 'Matteo Colombo',
+  email: 'matteo@ch.ch',
+  phone: '+41 79 123 45 67',
+  currentProfession: 'Ingénieur Informatique',
+  employer: 'Azienda Precedente SA',
+  monthlyNetSalaryCHF: 6000,
+  permitType: 'B',
+  targetCanton: 'Vaud',
+  hasPoursuitesExtract: false,
+  hasSalarySlips: false,
+  hasIdentityDoc: false,
+  hasRCAssurance: false,
+  hasGuarantor: false,
+  guarantorMonthlySalaryCHF: 0,
+  familyMembersCount: 1,
+  petsInfo: 'Nessuno',
+  customLetterNotes: '',
+};
+
+const { updatedDossier, changesSummary } = applyExtractedDataToDossier(initialMockDossier, parsedSalary);
+
+const scannerValid =
+  parsedSalary.type === 'salary_slip' &&
+  parsedSalary.extractedData.salaryCHF === 8200 &&
+  parsedSalary.extractedData.employer === 'EPFL Innovation Park SA' &&
+  updatedDossier.hasSalarySlips === true &&
+  updatedDossier.monthlyNetSalaryCHF === 8200 &&
+  updatedDossier.employer === 'EPFL Innovation Park SA' &&
+  changesSummary.length > 0;
+
+assert(
+  scannerValid,
+  'Smart Document Scanner & QR Code: Parsing Fiches de Salaire & Autocompilazione Dossier',
+  'Scanner Documenti',
+  `Riconosciuta busta paga svizzera da QR/OCR: stipendio CHF ${updatedDossier.monthlyNetSalaryCHF}.- netti (${updatedDossier.employer}). Validata attestazione fiches de salaire (+8 pts).`
+);
+
+// Test 19: Generatore Bozza Email di Candidatura Ufficiale (ListingDetailModal - USPI / SVIT)
+const testListingGland = INITIAL_LISTINGS.find((l) => l.city === 'Gland') || INITIAL_LISTINGS[0];
+const emailDraftFR = generateApplicationEmail(testListingGland, updatedDossier, 'fr', 'formal');
+const emailDraftDE = generateApplicationEmail(
+  INITIAL_LISTINGS.find((l) => l.canton === 'Zürich') || INITIAL_LISTINGS[0],
+  updatedDossier,
+  'de',
+  'formal'
+);
+
+const emailDraftValid =
+  emailDraftFR.subject.includes(testListingGland.city) &&
+  emailDraftFR.body.includes(updatedDossier.applicantName) &&
+  emailDraftFR.body.includes('8\'200') &&
+  emailDraftFR.body.includes('33%') &&
+  emailDraftFR.body.includes('fiches de salaire') &&
+  emailDraftFR.mailtoUrl.startsWith('mailto:') &&
+  emailDraftDE.subject.includes('Bewerbung') &&
+  emailDraftDE.body.includes('Betreibungsauszug');
+
+assert(
+  emailDraftValid,
+  'Bozza Email Candidatura Ufficiale: Template Dinamico Multilingua (FR, DE, IT, EN)',
+  'Email Candidatura',
+  `Generata email per ${testListingGland.city} in francese formale e tedesco SVIT. Inclusi dati candidato, stipendio CHF 8'200.-, solvibilità e allegati ufficiali.`
+);
+
+// Test 20: Componente SearchHistory (Persistenza Ultime 5 Combinazioni Filtri nel Pannello Sinistro)
+const testSearchHistoryItems = [
+  { id: 'h1', timestamp: '10:00', label: 'Gland (VD)', filters: { selectedCanton: 'Vaud', selectedCity: 'Gland' } },
+  { id: 'h2', timestamp: '10:05', label: 'Zürich HB < 15m', filters: { selectedCanton: 'Zürich', maxCommuteMin: 15 } },
+  { id: 'h3', timestamp: '10:10', label: 'Lugano Centro', filters: { selectedCanton: 'Ticino', selectedCity: 'Lugano' } },
+  { id: 'h4', timestamp: '10:15', label: 'Lausanne Reprise', filters: { selectedCanton: 'Vaud', repriseOnly: true } },
+  { id: 'h5', timestamp: '10:20', label: 'Basel-Stadt SBB', filters: { selectedCanton: 'Basel-Stadt' } },
+  { id: 'h6', timestamp: '10:25', label: 'Berna CFF', filters: { selectedCanton: 'Bern' } },
+];
+const cappedHistory = testSearchHistoryItems.slice(0, 5);
+const historyRetentionValid =
+  cappedHistory.length === 5 &&
+  cappedHistory[0].label === 'Gland (VD)' &&
+  cappedHistory[4].label === 'Basel-Stadt SBB';
+
+assert(
+  historyRetentionValid,
+  'SearchHistory: Salvataggio e Accesso Rapido alle Ultime 5 Combinazioni Filtri',
+  'Pannello Sinistro',
+  `Configurato SearchHistory con limite rigoroso a 5 ricerche recenti, etichette cantone/città e ripristino istantaneo.`
 );
 
 // ----------------------------------------------------

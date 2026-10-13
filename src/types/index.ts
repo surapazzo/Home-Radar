@@ -144,3 +144,34 @@ export interface UserProfile {
   savedListingIds: string[];
   hideEmailWithApple?: boolean;
 }
+
+export type ScannedDocumentType =
+  | 'salary_slip'
+  | 'identity_doc'
+  | 'poursuites_extract'
+  | 'rc_assurance'
+  | 'swiss_egov_qr'
+  | 'unknown';
+
+export interface ScannedDocumentResult {
+  id: string;
+  timestamp: string;
+  type: ScannedDocumentType;
+  fileName?: string;
+  source: 'camera' | 'upload' | 'qr_code' | 'sample';
+  rawText?: string;
+  qrPayload?: string;
+  confidence: number;
+  extractedData: {
+    salaryCHF?: number;
+    employer?: string;
+    applicantName?: string;
+    permitType?: 'B' | 'C' | 'L' | 'G' | 'CH';
+    dateOfBirth?: string;
+    poursuitesClean?: boolean;
+    hasRC?: boolean;
+    issueDate?: string;
+    notes?: string;
+  };
+  appliedToDossier?: boolean;
+}
