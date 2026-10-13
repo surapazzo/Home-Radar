@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
-import { DossierState, Language } from '../types';
+import { DossierState, Language, SwissCanton } from '../types';
+import { getCantonLanguage, getCantonDebtOffice } from '../data/swissGeography';
 
 interface ExtendedDossierState extends DossierState {
   dateOfBirth?: string;
@@ -559,11 +560,11 @@ export function generateSwissDossierPdf(dossier: ExtendedDossierState, lang: Lan
   p2Y += 14;
 
   // Motivation Letter Body text formatted according to Swiss official standard
-  const isGermanCanton = ['Zürich', 'Bern', 'Basel-Stadt', 'Luzern', 'Zug', 'St. Gallen'].includes(targetCanton);
-  const isItalianCanton = targetCanton === 'Ticino';
+  const cantonLang = getCantonLanguage(targetCanton);
+  const debtOffice = getCantonDebtOffice(targetCanton);
 
   let letterBody = '';
-  if (lang === 'de' || (lang === 'en' && isGermanCanton)) {
+  if (lang === 'de' || (lang === 'en' && cantonLang === 'de') || cantonLang === 'de') {
     letterBody = `Sehr geehrte Damen und Herren,
 
 Hiermit bewerbe ich mich mit grossem Interesse um die Mietwohnung im Kanton ${targetCanton}.
@@ -572,7 +573,7 @@ Derzeit bin ich als ${dossier.currentProfession || 'Fachkraft'} bei der Firma ${
 
 Ich besitze eine Aufenthaltsbewilligung der Kategorie ${dossier.permitType}. In der Anlage finden Sie mein vollständiges und geprüftes Schweizer Bewerbungsdossier:
 1. Kopie meines amtlichen Ausweises und Aufenthaltsbewilligung (Kategorie ${dossier.permitType}).
-2. Originaler Betreibungsauszug ohne Einträge (nicht älter als 3 Monate).
+2. Originaler Betreibungsauszug des ${debtOffice} ohne Einträge (nicht älter als 3 Monate).
 3. Die letzten 3 Lohnabrechnungen als lückenloser Einkommensnachweis.
 4. Nachweis der Privathaftpflicht- und Hausratversicherung (RC ménage).
 
@@ -581,7 +582,7 @@ ${dossier.customLetterNotes ? `${dossier.customLetterNotes}\n\n` : ''}Als ruhige
 Freundliche Grüsse,
 
 ${dossier.applicantName}`;
-  } else if (lang === 'it' || isItalianCanton) {
+  } else if (lang === 'it' || cantonLang === 'it') {
     letterBody = `Gentile Fiduciaria / Proprietà,
 
 Con la presente desidero sottoporre la mia formale candidatura per la locazione dell'immobile situato nel Canton ${targetCanton}.
@@ -590,7 +591,7 @@ Attualmente impiegato/a come ${dossier.currentProfession || 'professionista'} pr
 
 Titolare di permesso di soggiorno categoria ${dossier.permitType}, allego la documentazione completa:
 1. Copia documento di identità e permesso di soggiorno (cat. ${dossier.permitType}).
-2. Estratto originale dell'Ufficio Esecuzioni e Fallimenti privo di precetti (< 3 mesi).
+2. Estratto originale dell'${debtOffice} privo di precetti (< 3 mesi).
 3. Ultime 3 buste paga mensili consecutive.
 4. Attestazione polizza assicurativa Responsabilità Civile (RC) privata e mobilia domestica.
 
@@ -608,7 +609,7 @@ Currently employed as ${dossier.currentProfession || 'Senior Professional'} at $
 
 Holder of a Swiss residence permit category ${dossier.permitType}, please find attached my complete application file:
 1. Copy of official identification passport and Swiss residence permit (${dossier.permitType}).
-2. Original Debt Enforcement Register Extract (Office des poursuites / Betreibungsauszug) free of any entries (< 3 months).
+2. Original Debt Enforcement Register Extract (${debtOffice}) free of any entries (< 3 months).
 3. Last 3 consecutive monthly salary slips proving stable income.
 4. Proof of Swiss Household & Personal Liability Insurance (RC ménage / Privathaftpflicht).
 
@@ -626,7 +627,7 @@ Actuellement en poste en tant que ${dossier.currentProfession || 'professionnel(
 
 Titulaire d'un permis de séjour de catégorie ${dossier.permitType}, vous trouverez en pièce jointe mon dossier complet et certifié comprenant :
 1. La copie de ma pièce d'identité officielle et permis de séjour (${dossier.permitType}).
-2. L'attestation originale de l'Office des Poursuites et Faillites vierge de toute inscription datant de moins de 3 mois.
+2. L'attestation originale de l'${debtOffice} vierge de toute inscription datant de moins de 3 mois.
 3. Mes trois dernières fiches de salaire attestant de mes revenus réguliers.
 4. L'attestation d'assurance Responsabilité Civile (RC) ménage.
 

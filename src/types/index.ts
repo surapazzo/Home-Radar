@@ -4,17 +4,31 @@ export type ListingSource = 'immoscout24' | 'homegate' | 'anibis' | 'flatfox' | 
 
 export type SwissCanton =
   | 'Zürich'
-  | 'Genève'
-  | 'Vaud'
   | 'Bern'
-  | 'Basel-Stadt'
-  | 'Ticino'
   | 'Luzern'
+  | 'Uri'
+  | 'Schwyz'
+  | 'Obwalden'
+  | 'Nidwalden'
+  | 'Glarus'
   | 'Zug'
-  | 'Neuchâtel'
   | 'Fribourg'
+  | 'Solothurn'
+  | 'Basel-Stadt'
+  | 'Basel-Landschaft'
+  | 'Schaffhausen'
+  | 'Appenzell Ausserrhoden'
+  | 'Appenzell Innerrhoden'
+  | 'St. Gallen'
+  | 'Graubünden'
+  | 'Aargau'
+  | 'Thurgau'
+  | 'Ticino'
+  | 'Vaud'
   | 'Valais'
-  | 'St. Gallen';
+  | 'Neuchâtel'
+  | 'Genève'
+  | 'Jura';
 
 export interface Listing {
   id: string;

@@ -24,27 +24,18 @@ import {
 } from 'lucide-react';
 import { generateSwissDossierPdf } from '../utils/generateSwissDossierPdf';
 import { DocumentScannerCard } from './DocumentScannerCard';
+import {
+  SWISS_CANTONS,
+  getCantonLanguage,
+  getCantonDebtOffice,
+  SWISS_CANTON_MARKET_STATS,
+} from '../data/swissGeography';
 
 interface DossierViewProps {
   lang: Language;
   dossier: DossierState;
   setDossier: React.Dispatch<React.SetStateAction<DossierState>>;
 }
-
-const SWISS_CANTONS: SwissCanton[] = [
-  'Zürich',
-  'Genève',
-  'Vaud',
-  'Basel-Stadt',
-  'Bern',
-  'Ticino',
-  'Luzern',
-  'Zug',
-  'Neuchâtel',
-  'Fribourg',
-  'Valais',
-  'St. Gallen',
-];
 
 export const DossierView: React.FC<DossierViewProps> = ({ lang, dossier, setDossier }) => {
   const t = TRANSLATIONS[lang];
@@ -239,21 +230,17 @@ export const DossierView: React.FC<DossierViewProps> = ({ lang, dossier, setDoss
   // Letter language state: auto follows canton or UI language, or user can override
   const [letterLanguage, setLetterLanguage] = useState<'auto' | 'de' | 'fr' | 'it' | 'en'>('auto');
 
-  // Determine official regional language for the target Canton
-  const isGermanCanton = ['Zürich', 'Bern', 'Basel-Stadt', 'Luzern', 'Zug', 'St. Gallen'].includes(
-    dossier.targetCanton || 'Zürich'
-  );
-  const isItalianCanton = dossier.targetCanton === 'Ticino';
+  // Determine official regional language and debt office for the target Canton
+  const targetCanton = (dossier.targetCanton as SwissCanton) || 'Zürich';
+  const targetCantonLang = getCantonLanguage(targetCanton);
+  const targetDebtOffice = getCantonDebtOffice(targetCanton);
+  const cantonMarket = SWISS_CANTON_MARKET_STATS[targetCanton];
 
   const effectiveLetterLang =
     letterLanguage === 'auto'
       ? lang === 'en'
         ? 'en'
-        : isGermanCanton
-        ? 'de'
-        : isItalianCanton
-        ? 'it'
-        : 'fr'
+        : targetCantonLang
       : letterLanguage;
 
   // Generate Official Canton-Tailored Cover Letter
@@ -262,13 +249,13 @@ export const DossierView: React.FC<DossierViewProps> = ({ lang, dossier, setDoss
   if (effectiveLetterLang === 'de') {
     generatedLetter = `Sehr geehrte Damen und Herren,
 
-Hiermit bewerbe ich mich mit grossem Interesse um die Mietwohnung im Kanton ${dossier.targetCanton || 'Zürich'}.
+Hiermit bewerbe ich mich mit grossem Interesse um die Mietwohnung im Kanton ${targetCanton}.
 
 Derzeit bin ich als ${dossier.currentProfession || 'Fachkraft'} bei der Firma ${dossier.employer || 'meinem Arbeitgeber'} angestellt. Mit einem regelmässigen monatlichen Nettoeinkommen von CHF ${formatCHF(dossier.monthlyNetSalaryCHF)}.- erfülle ich die übliche Schweizer Bonitätsregel (Bruttomiete unter einem Drittel des Nettoeinkommens).
 
 Ich besitze eine Aufenthaltsbewilligung der Kategorie ${dossier.permitType}. In der Anlage finden Sie mein vollständiges und geprüftes Schweizer Bewerbungsdossier:
 1. Kopie meines amtlichen Ausweises und Aufenthaltsbewilligung (Kategorie ${dossier.permitType}).
-2. Originaler Betreibungsauszug ohne Einträge (nicht älter als 3 Monate).
+2. Originaler Betreibungsauszug des ${targetDebtOffice} ohne Einträge (nicht älter als 3 Monate).
 3. Die letzten 3 Lohnabrechnungen als lückenloser Einkommensnachweis.
 4. Nachweis der Privathaftpflicht- und Hausratversicherung (RC ménage).
 
@@ -282,13 +269,13 @@ E-Mail: ${dossier.email}`;
   } else if (effectiveLetterLang === 'it') {
     generatedLetter = `Gentile Fiduciaria / Proprietà,
 
-Con la presente desidero sottoporre la mia formale candidatura per la locazione dell'immobile situato nel Canton ${dossier.targetCanton || 'Ticino'}.
+Con la presente desidero sottoporre la mia formale candidatura per la locazione dell'immobile situato nel Canton ${targetCanton}.
 
 Attualmente impiegato/a come ${dossier.currentProfession || 'professionista'} presso la società ${dossier.employer || 'il mio datore di lavoro'}, dispongo di un reddito netto mensile certificato di CHF ${formatCHF(dossier.monthlyNetSalaryCHF)}.-, pienamente conforme alla regola di solvibilità svizzera (pigione lorda inferiore a un terzo dello stipendio netto).
 
 Titolare di permesso di soggiorno categoria ${dossier.permitType}, allego la documentazione completa:
 1. Copia documento di identità e permesso di soggiorno (cat. ${dossier.permitType}).
-2. Estratto originale dell'Ufficio Esecuzioni e Fallimenti privo di precetti (< 3 mesi).
+2. Estratto originale dell'${targetDebtOffice} privo di precetti (< 3 mesi).
 3. Ultime 3 buste paga mensili consecutive.
 4. Attestazione polizza assicurativa Responsabilità Civile (RC) privata e mobilia domestica.
 
@@ -302,13 +289,13 @@ Email: ${dossier.email}`;
   } else if (effectiveLetterLang === 'en') {
     generatedLetter = `Dear Property Management / Landlord,
 
-I am writing to formally submit my rental application for the property in Canton ${dossier.targetCanton || 'Switzerland'}.
+I am writing to formally submit my rental application for the property in Canton ${targetCanton}.
 
 Currently employed as ${dossier.currentProfession || 'Senior Professional'} at ${dossier.employer || 'my employer'}, I enjoy stable and secure financial circumstances with a verified net monthly income of CHF ${formatCHF(dossier.monthlyNetSalaryCHF)}.-, strictly complying with the standard Swiss solvency ceiling (gross rent under 33% of household net income).
 
 Holder of a Swiss residence permit category ${dossier.permitType}, please find attached my complete application file:
 1. Copy of official identification passport and Swiss residence permit (${dossier.permitType}).
-2. Original Debt Enforcement Register Extract (Office des poursuites / Betreibungsauszug) free of any entries (< 3 months).
+2. Original Debt Enforcement Register Extract (${targetDebtOffice}) free of any entries (< 3 months).
 3. Last 3 consecutive monthly salary slips proving stable income.
 4. Proof of Swiss Household & Personal Liability Insurance (RC ménage / Privathaftpflicht).
 
@@ -322,13 +309,13 @@ Email: ${dossier.email}`;
   } else {
     generatedLetter = `Madame, Monsieur,
 
-Par la présente, je vous soumets avec grand intérêt mon dossier de candidature pour la location de l'appartement situé dans le Canton de ${dossier.targetCanton || 'Vaud'}.
+Par la présente, je vous soumets avec grand intérêt mon dossier de candidature pour la location de l'appartement situé dans le Canton de ${targetCanton}.
 
 Actuellement en poste en tant que ${dossier.currentProfession || 'professionnel(le)'} auprès de la société ${dossier.employer || 'mon employeur'}, je bénéficie d'une situation financière stable et pérenne avec un revenu mensuel net de CHF ${formatCHF(dossier.monthlyNetSalaryCHF)}.-, respectant scrupuleusement la règle prudentielle de solvabilité (loyer inférieur au tiers du revenu net).
 
 Titulaire d'un permis de séjour de catégorie ${dossier.permitType}, vous trouverez en pièce jointe mon dossier complet et certifié comprenant :
 1. La copie de ma pièce d'identité officielle et permis de séjour (${dossier.permitType}).
-2. L'attestation originale de l'Office des Poursuites et Faillites vierge de toute inscription datant de moins de 3 mois.
+2. L'attestation originale de l'${targetDebtOffice} vierge de toute inscription datant de moins de 3 mois.
 3. Mes trois dernières fiches de salaire attestant de mes revenus réguliers.
 4. L'attestation d'assurance Responsabilité Civile (RC) ménage.
 
@@ -821,22 +808,59 @@ Email : ${dossier.email}`;
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1 flex items-center justify-between">
-                  <span>{t.dossier.targetCanton}</span>
-                  <CantonFlag canton={dossier.targetCanton || 'Zürich'} size="sm" />
-                </label>
-                <select
-                  value={dossier.targetCanton || 'Zürich'}
-                  onChange={(e) => setDossier((p) => ({ ...p, targetCanton: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium"
-                >
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5">
+                    <span>{t.dossier.targetCanton}</span>
+                    <CantonFlag canton={targetCanton} size="sm" />
+                    <span className="text-red-600 dark:text-red-400 font-bold">({targetCanton})</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    {targetDebtOffice}
+                  </span>
+                </div>
+
+                {/* Quick 1-click Canton Switcher Pills (All 26 Swiss Cantons) */}
+                <div className="flex flex-wrap items-center gap-1 mb-2 max-h-36 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200/60 dark:border-slate-800">
                   {SWISS_CANTONS.map((c) => (
-                    <option key={c} value={c}>
-                      Canton {c}
-                    </option>
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setDossier((p) => ({ ...p, targetCanton: c }))}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                        targetCanton === c
+                          ? 'bg-red-600 text-white shadow-2xs font-bold'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <CantonFlag canton={c} size="sm" />
+                      <span>{c}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={targetCanton}
+                    onChange={(e) => setDossier((p) => ({ ...p, targetCanton: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium text-xs"
+                  >
+                    {SWISS_CANTONS.map((c) => (
+                      <option key={c} value={c}>
+                        Canton {c} ({getCantonDebtOffice(c)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {cantonMarket && (
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>
+                      Mercato Cantonale {targetCanton}: <strong>{cantonMarket.activeAnnounces.toLocaleString()}</strong> alloggi attivi · Pigione media CHF {cantonMarket.avgRentCHF}.- · Lingua ufficiale: {cantonMarket.primaryLanguage.toUpperCase()}
+                    </span>
+                  </p>
+                )}
               </div>
 
               <div>

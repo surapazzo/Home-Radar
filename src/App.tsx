@@ -445,6 +445,7 @@ export default function App() {
               setFilters={setFilters}
               totalListingsCount={listings.length}
               filteredCount={filteredListings.length}
+              listings={listings}
               onReset={handleResetFilters}
             />
 
@@ -578,6 +579,16 @@ export default function App() {
               setActiveView('feed');
             }}
             onSelectView={setActiveView}
+            onExpandDataset={(newListings) => {
+              setListings(newListings);
+              setAccountToast(`Dataset esteso a ${newListings.length} alloggi su tutti i 26 cantoni!`);
+              setTimeout(() => setAccountToast(null), 3500);
+            }}
+            onResetDataset={() => {
+              setListings(INITIAL_LISTINGS);
+              setAccountToast(`Dataset ripristinato a ${INITIAL_LISTINGS.length} alloggi originali.`);
+              setTimeout(() => setAccountToast(null), 3000);
+            }}
           />
         )}
       </main>
@@ -589,6 +600,15 @@ export default function App() {
         onClose={() => setDetailModalListing(null)}
         dossier={dossier}
         onOpenDossier={() => {
+          if (detailModalListing) {
+            setDossier((prev) => ({
+              ...prev,
+              targetCanton: detailModalListing.canton,
+              targetRentCHF: detailModalListing.rentTotalCHF,
+            }));
+            setAccountToast(`Dossier configurato per ${detailModalListing.city} (Canton ${detailModalListing.canton})`);
+            setTimeout(() => setAccountToast(null), 3000);
+          }
           setDetailModalListing(null);
           setActiveView('dossier');
         }}
